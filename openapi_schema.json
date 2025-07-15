@@ -1,0 +1,98 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Construction Contract Course Materials API",
+    "description": "API for searching construction contract course materials about NZS 3910, progress claims, variations, disputes, and cost control",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://microcred.onrender.com",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/search": {
+      "post": {
+        "summary": "Search course materials",
+        "description": "Search through construction contract course materials to find relevant content about progress claims, variation claims, dispute resolution, cost control, and NZS 3910 contract administration",
+        "operationId": "searchCourseMaterials",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "The search query about construction contracts, progress claims, variations, disputes, or cost control"
+                  },
+                  "top_k": {
+                    "type": "integer",
+                    "description": "Number of results to return (default: 5, max: 10)",
+                    "default": 5,
+                    "minimum": 1,
+                    "maximum": 10
+                  }
+                },
+                "required": ["query"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results from construction contract course materials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "string",
+                      "description": "The original search query"
+                    },
+                    "results": {
+                      "type": "array",
+                      "description": "List of relevant course material excerpts",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "score": {
+                            "type": "number",
+                            "description": "Relevance score (0-1, higher = more relevant)"
+                          },
+                          "document_name": {
+                            "type": "string",
+                            "description": "Name of the source document"
+                          },
+                          "module": {
+                            "type": "string",
+                            "description": "Course module (e.g., 'Progress Claims Management', 'Variation Claims Handling')"
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "Relevant text content from the course materials"
+                          },
+                          "chunk_index": {
+                            "type": "integer",
+                            "description": "Position of this text within the document"
+                          }
+                        }
+                      }
+                    },
+                    "total_results": {
+                      "type": "integer",
+                      "description": "Total number of results returned"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
