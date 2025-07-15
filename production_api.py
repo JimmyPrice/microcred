@@ -213,11 +213,11 @@ async def custom_openapi():
     """Custom OpenAPI schema with server configuration for Custom GPT"""
     import json
     try:
-        with open('openapi_schema.json', 'r') as f:
+        with open('gpt_schema.json', 'r') as f:
             schema = json.load(f)
         return schema
     except Exception as e:
-        logger.error(f"Failed to load custom OpenAPI schema: {str(e)}")
+        logger.error(f"Failed to load GPT schema: {str(e)}")
         # Fallback to auto-generated schema with server info
         from fastapi.openapi.utils import get_openapi
         openapi_schema = get_openapi(
