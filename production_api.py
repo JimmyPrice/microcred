@@ -75,7 +75,7 @@ services_ready = initialize_services()
 
 class QueryRequest(BaseModel):
     query: str
-    top_k: Optional[int] = 5
+    top_k: Optional[int] = 10  # Increased default for better coverage
 
 class SearchResult(BaseModel):
     score: float
@@ -137,6 +137,48 @@ async def search_course_materials(request: QueryRequest):
     except Exception as e:
         logger.error(f"Search error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
+
+@app.get("/documents")
+async def list_documents():
+    """List all documents organized by module"""
+    global services_ready, index
+    
+    if not services_ready:
+        raise HTTPException(status_code=503, detail="Services not available")
+    
+    try:
+        # Query all documents
+        query_response = index.query(
+            vector=[0] * 1536,
+            top_k=1000,
+            include_metadata=True
+        )
+        
+        # Group by module
+        modules = {}
+        for match in query_response.matches:
+            module = match.metadata.get('module', 'Unknown')
+            doc_name = match.metadata.get('document_name', 'Unknown')
+            
+            if module not in modules:
+                modules[module] = set()
+            modules[module].add(doc_name)
+        
+        # Convert to sorted structure
+        result = {}
+        for module, docs in modules.items():
+            # Clean up document names
+            clean_docs = [doc.replace('.docx', '').replace('.pdf', '') for doc in sorted(docs)]
+            result[module] = clean_docs
+        
+        return {
+            "total_modules": len(result),
+            "modules": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Documents listing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list documents: {str(e)}")
 
 @app.get("/health")
 async def health_check():
