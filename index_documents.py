@@ -18,30 +18,30 @@ class DocumentIndexer:
         )
 
     def update_index(self):
-        # Define modules
+        # Define modules with complete course structure
         modules = {
-            '1 - Progress Claims Management': [
+            'Module 1 - Progress Claims Management': [
                 'Certification and payment',
                 'Dispute management',
                 'Introduction to progress claims',
                 'Preparation and Submission Process'
             ],
-            '2 - Variation Claims Handling': [
+            'Module 2 - Variation Claims Handling': [
                 'Preparing Variation Claims',
                 'The Documentation and Record Keeping of Variations',
                 'The Negotiation and Agreement of Variations',
                 'Types Of Variation'
             ],
-            '3 - Frustration, Delay, and Extension of Time Claims': [
+            'Module 3 - Frustration, Delay, and Extension of Time Claims': [
                 'Frustration vs. Delays under NZS 3910',
                 'Frustration, Delay, and Extension of Time Claims',
                 'Mitigation Strategies in Construction Projects under NZS 3910',
                 'Negotiation Processes in Construction Projects Administered under NZS 3910'
             ],
-            '4 - Dispute Resolution Techniques': [
+            'Module 4 - Dispute Resolution Techniques': [
                 'Dispute Resolution Techniques'
             ],
-            '5 - Cost Control in Post-Contract Administration': [
+            'Module 5 - Cost Control in Post-Contract Administration': [
                 'Cost Control Methods of Monitoring and Reporting in a Construction Project Administered Using the NZS 3910 Form of Contract',
                 'Cost-Saving Measures in a Construction Project Administered Using the NZS 3910 Form of Contract',
                 'The Principles of Cost Control in a Construction Project Using the NZS 3910 Form of Contract'

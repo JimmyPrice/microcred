@@ -12,6 +12,9 @@ from langchain_openai import OpenAIEmbeddings
 from pinecone import Pinecone
 import uvicorn
 import logging
+import hashlib
+import time
+from functools import lru_cache
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
