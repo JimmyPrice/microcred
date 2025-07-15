@@ -10,8 +10,12 @@ from typing import List, Optional
 import os
 from langchain_openai import OpenAIEmbeddings
 from pinecone import Pinecone
-from config import Config
 import uvicorn
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Course Materials API",
@@ -28,12 +32,43 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Pinecone
-pc = Pinecone(api_key=Config.PINECONE_API_KEY)
-index = pc.Index(Config.PINECONE_INDEX_NAME)
+# Environment variable configuration
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "course-documents")
+GOOGLE_DRIVE_FOLDER_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID")
 
-# Use OpenAI API key from environment
-embeddings = OpenAIEmbeddings(openai_api_key=Config.OPENAI_API_KEY)
+# Global variables for services
+pc = None
+index = None
+embeddings = None
+
+# Initialize services
+def initialize_services():
+    global pc, index, embeddings
+    
+    try:
+        if not OPENAI_API_KEY:
+            raise ValueError("OPENAI_API_KEY environment variable is required")
+        if not PINECONE_API_KEY:
+            raise ValueError("PINECONE_API_KEY environment variable is required")
+            
+        # Initialize Pinecone
+        pc = Pinecone(api_key=PINECONE_API_KEY)
+        index = pc.Index(PINECONE_INDEX_NAME)
+        
+        # Initialize OpenAI embeddings
+        embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+        
+        logger.info("Services initialized successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize services: {str(e)}")
+        return False
+
+# Try to initialize services
+services_ready = initialize_services()
 
 class QueryRequest(BaseModel):
     query: str
@@ -56,6 +91,18 @@ async def search_course_materials(request: QueryRequest):
     """
     Search through course materials using semantic search
     """
+    global services_ready, embeddings, index
+    
+    # Check if services are ready
+    if not services_ready:
+        # Try to reinitialize services
+        services_ready = initialize_services()
+        if not services_ready:
+            raise HTTPException(status_code=503, detail="Services not available. Please check environment variables.")
+    
+    if not embeddings or not index:
+        raise HTTPException(status_code=503, detail="Search services not initialized")
+    
     try:
         # Generate query embedding
         query_embedding = embeddings.embed_query(request.query)
@@ -85,12 +132,30 @@ async def search_course_materials(request: QueryRequest):
         )
         
     except Exception as e:
+        logger.error(f"Search error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "service": "Course Materials API"}
+    global services_ready, embeddings, index
+    
+    # Check service status
+    status = "healthy" if services_ready and embeddings and index else "unhealthy"
+    
+    return {
+        "status": status,
+        "service": "Course Materials API",
+        "services_ready": services_ready,
+        "embeddings_ready": embeddings is not None,
+        "index_ready": index is not None,
+        "environment_variables": {
+            "OPENAI_API_KEY": "set" if OPENAI_API_KEY else "missing",
+            "PINECONE_API_KEY": "set" if PINECONE_API_KEY else "missing",
+            "PINECONE_INDEX_NAME": PINECONE_INDEX_NAME,
+            "GOOGLE_DRIVE_FOLDER_ID": "set" if GOOGLE_DRIVE_FOLDER_ID else "missing"
+        }
+    }
 
 @app.get("/")
 async def root():
