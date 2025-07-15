@@ -167,7 +167,41 @@ async def root():
         "endpoints": {
             "search": "POST /search - Search course materials",
             "docs": "GET /docs - API documentation",
-            "schema": "GET /custom-openapi.json - Custom GPT OpenAPI schema"
+            "schema": "GET /custom-openapi.json - Custom GPT OpenAPI schema",
+            "privacy": "GET /privacy - Privacy policy",
+            "terms": "GET /terms - Terms of service"
+        }
+    }
+
+@app.get("/privacy")
+async def privacy_policy():
+    """Privacy policy endpoint required for public GPT actions"""
+    return {
+        "title": "Privacy Policy - Course Materials API",
+        "last_updated": "2024-01-01",
+        "content": {
+            "data_collection": "We collect search queries to provide relevant course material results. No personal information is stored.",
+            "data_usage": "Search queries are used only to return relevant construction contract course materials. Query logs may be kept for service improvement.",
+            "data_sharing": "We do not share user data with third parties. All data remains within our secure infrastructure.",
+            "data_retention": "Search queries are retained for 30 days for service improvement purposes, then automatically deleted.",
+            "user_rights": "Users can request deletion of their data by contacting support.",
+            "contact": "For privacy concerns, contact us through the API documentation."
+        }
+    }
+
+@app.get("/terms")
+async def terms_of_service():
+    """Terms of service endpoint"""
+    return {
+        "title": "Terms of Service - Course Materials API",
+        "last_updated": "2024-01-01",
+        "content": {
+            "service_description": "This API provides access to construction contract course materials for educational purposes.",
+            "acceptable_use": "The service is intended for educational and research purposes related to construction contract management.",
+            "limitations": "The service is provided 'as is' without warranties. Usage is subject to reasonable rate limits.",
+            "intellectual_property": "Course materials remain the property of their respective authors and institutions.",
+            "termination": "Access may be terminated for misuse or violation of these terms.",
+            "governing_law": "These terms are governed by applicable local laws."
         }
     }
 
