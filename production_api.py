@@ -197,6 +197,138 @@ async def custom_openapi():
         ]
         return openapi_schema
 
+@app.post("/reindex")
+async def reindex_documents():
+    """Re-index all documents from Google Drive"""
+    global services_ready, embeddings, index
+    
+    if not services_ready:
+        raise HTTPException(status_code=503, detail="Services not available")
+    
+    try:
+        # Import here to avoid circular imports
+        from google_drive_client import GoogleDriveClient
+        from langchain.text_splitter import RecursiveCharacterTextSplitter
+        import re
+        
+        # Initialize components
+        drive_client = GoogleDriveClient()
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200
+        )
+        
+        # Expected document structure
+        expected_modules = {
+            '1 - Progress Claims Management': [
+                'Certification and payment',
+                'Dispute management', 
+                'Introduction to progress claims',
+                'Preparation and Submission Process'
+            ],
+            '2 - Variation Claims Handling': [
+                'Preparing Variation Claims',
+                'The Documentation and Record Keeping of Variations',
+                'The Negotiation and Agreement of Variations',
+                'Types Of Variation'
+            ],
+            '3 - Frustration, Delay, and Extension of Time Claims': [
+                'Frustration vs. Delays under NZS 3910',
+                'Frustration, Delay, and Extension of Time Claims',
+                'Mitigation Strategies in Construction Projects under NZS 3910',
+                'Negotiation Processes in Construction Projects Administered under NZS 3910'
+            ],
+            '4 - Dispute Resolution Techniques': [
+                'Dispute Resolution Techniques'
+            ],
+            '5 - Cost Control in Post-Contract Administration': [
+                'Cost Control Methods of Monitoring and Reporting in a Construction Project Administered Using the NZS 3910 Form of Contract',
+                'Cost-Saving Measures in a Construction Project Administered Using the NZS 3910 Form of Contract',
+                'The Principles of Cost Control in a Construction Project Using the NZS 3910 Form of Contract'
+            ]
+        }
+        
+        # Get all documents
+        all_docs = drive_client.get_all_documents()
+        
+        results = {
+            "total_documents_found": len(all_docs),
+            "indexed_documents": [],
+            "missing_documents": [],
+            "errors": []
+        }
+        
+        # Process each expected document
+        for module, expected_docs in expected_modules.items():
+            for expected_doc in expected_docs:
+                matched_doc = None
+                
+                # Find matching document
+                for doc in all_docs:
+                    if (doc['name'] == expected_doc or 
+                        doc['name'].lower() == expected_doc.lower() or
+                        expected_doc.lower() in doc['name'].lower()):
+                        matched_doc = doc
+                        break
+                
+                if matched_doc:
+                    try:
+                        # Delete existing chunks
+                        existing_query = index.query(
+                            vector=[0] * 1536,
+                            filter={'document_name': matched_doc['name']},
+                            top_k=1000,
+                            include_metadata=True
+                        )
+                        
+                        if existing_query.matches:
+                            ids_to_delete = [match.id for match in existing_query.matches]
+                            index.delete(ids=ids_to_delete)
+                        
+                        # Create new chunks
+                        chunks = text_splitter.split_text(matched_doc['content'])
+                        
+                        # Create embeddings and index
+                        vectors_to_upsert = []
+                        for i, chunk in enumerate(chunks):
+                            embedding = embeddings.embed_query(chunk)
+                            vectors_to_upsert.append({
+                                'id': f"{matched_doc['name']}_{i}",
+                                'values': embedding,
+                                'metadata': {
+                                    'document_name': matched_doc['name'],
+                                    'module': module,
+                                    'text': chunk,
+                                    'chunk_index': i
+                                }
+                            })
+                        
+                        # Upsert to Pinecone
+                        if vectors_to_upsert:
+                            index.upsert(vectors=vectors_to_upsert)
+                            results["indexed_documents"].append({
+                                "name": matched_doc['name'],
+                                "module": module,
+                                "chunks": len(vectors_to_upsert)
+                            })
+                        
+                    except Exception as e:
+                        results["errors"].append({
+                            "document": matched_doc['name'],
+                            "error": str(e)
+                        })
+                else:
+                    results["missing_documents"].append({
+                        "expected_name": expected_doc,
+                        "module": module
+                    })
+        
+        return results
+        
+    except Exception as e:
+        logger.error(f"Reindexing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Reindexing failed: {str(e)}")
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
