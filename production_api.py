@@ -255,9 +255,9 @@ async def reindex_documents():
             chunk_overlap=200
         )
         
-        # Expected document structure
+        # Expected document structure - using actual module names from index
         expected_modules = {
-            '1 - Progress Claims Management': [
+            '1 - Progress Claims Management (micro)': [
                 'Certification and payment',
                 'Dispute management', 
                 'Introduction to progress claims',
@@ -269,7 +269,7 @@ async def reindex_documents():
                 'The Negotiation and Agreement of Variations',
                 'Types Of Variation'
             ],
-            '3 - Frustration, Delay, and Extension of Time Claims': [
+            '3 - Frustration, Delay, and Extension of Time Claims ': [
                 'Frustration vs. Delays under NZS 3910',
                 'Frustration, Delay, and Extension of Time Claims',
                 'Mitigation Strategies in Construction Projects under NZS 3910',
