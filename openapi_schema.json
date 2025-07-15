@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Construction Contract Course Materials API",
-    "description": "API for searching construction contract course materials about NZS 3910, progress claims, variations, disputes, and cost control",
+    "title": "Course Materials API",
+    "description": "API for searching construction contract course materials",
     "version": "1.0.0"
   },
   "servers": [

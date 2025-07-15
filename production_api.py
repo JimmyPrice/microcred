@@ -166,9 +166,36 @@ async def root():
         "description": "Search construction contract course materials",
         "endpoints": {
             "search": "POST /search - Search course materials",
-            "docs": "GET /docs - API documentation"
+            "docs": "GET /docs - API documentation",
+            "schema": "GET /custom-openapi.json - Custom GPT OpenAPI schema"
         }
     }
+
+@app.get("/custom-openapi.json")
+async def custom_openapi():
+    """Custom OpenAPI schema with server configuration for Custom GPT"""
+    import json
+    try:
+        with open('openapi_schema.json', 'r') as f:
+            schema = json.load(f)
+        return schema
+    except Exception as e:
+        logger.error(f"Failed to load custom OpenAPI schema: {str(e)}")
+        # Fallback to auto-generated schema with server info
+        from fastapi.openapi.utils import get_openapi
+        openapi_schema = get_openapi(
+            title="Course Materials API",
+            version="1.0.0",
+            description="API for searching construction contract course materials",
+            routes=app.routes,
+        )
+        openapi_schema["servers"] = [
+            {
+                "url": "https://microcred.onrender.com",
+                "description": "Production server"
+            }
+        ]
+        return openapi_schema
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
